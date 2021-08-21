@@ -94,8 +94,8 @@ class Clock {
  public:
   volatile CLKCtrlReg *clkReg;
   void initClock();
-  inline uint64_t getPLLCFrequency(){return pllcFrequency;};
-  inline uint64_t getPLLDFrequency(){return plldFrequency;};
+  inline uint64_t getPLLCFrequency(){return pllcFrequency;}
+  inline uint64_t getPLLDFrequency(){return plldFrequency;}
   explicit Clock(uint32_t centerFrequency, GPIO * gpio, Peripheral * peripheralUtil);
   ~Clock(void);
 };

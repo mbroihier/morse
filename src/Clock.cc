@@ -33,7 +33,6 @@ Mark Broihier 2021
 #include "../include/Clock.h"
 
 void Clock::initClock() {
-
   // PLLC is going to be used to drive RF signal.  Since other things are using PLLC,  those things need to use
   // other clock sources that are stable.
 
@@ -43,7 +42,7 @@ void Clock::initClock() {
   clkReg[CORECLK].ctrl = BCM_PASSWD | CLK_CTL_ENAB | CLK_CTL_SRC(CLK_CTL_SRC_PLLA);
 
   // Switch EMMC to PLLD
-  
+
   // kill the clock if busy
   if (clkReg[EMMCCLK].ctrl & CLK_CTL_BUSY) {
     do {
@@ -66,7 +65,7 @@ void Clock::initClock() {
   usleep(100);
 
   clkReg[PLLC_CORE].ctrl = BCM_PASSWD | (1 << 8);  // disable what?
-  clkReg[PLLC_PER].ctrl = BCM_PASSWD | (1 << 0);  // divisor 1 for max frequency 
+  clkReg[PLLC_PER].ctrl = BCM_PASSWD | (1 << 0);  // divisor 1 for max frequency
   // get frequency of PLLC
   uint32_t pllCtl;
   uint32_t pllFrac;
@@ -81,13 +80,11 @@ void Clock::initClock() {
   // find divider for PLL C clock
   uint32_t divider = 0;
   for (divider = 4095; divider > 1; divider--) {
-    //if (centerFrequency * divider > frequency) continue;
     if ((uint64_t)centerFrequency * divider < 200e6) {
       fprintf(stderr, "divider shouldn't get this small - %d\n", divider);
       continue;
     }
     if ((uint64_t)centerFrequency * divider > 1500e6) {
-      //fprintf(stderr, "divider still too big, keep going - %d\n", divider);
       continue;
     }
     break;
@@ -100,8 +97,8 @@ void Clock::initClock() {
   clkReg[GP0CLK].div = BCM_PASSWD | CLK_DIV_DIVI(divider);
 
   // now lets program the frequency for PLLC
-  double multiplier = ((double) centerFrequency * divider) / (double) XOSC_FREQUENCY;
-  uint32_t scaledMultiplier = multiplier * (double)(1 << 20);
+  double multiplier = (static_cast<double>(centerFrequency) * divider) / static_cast<double>(XOSC_FREQUENCY);
+  uint32_t scaledMultiplier = multiplier * static_cast<double>(1 << 20);
   uint32_t integerPortion = scaledMultiplier >> 20;
   uint32_t fractionalPortion = scaledMultiplier & 0xfffff;
   clkReg[PLLC_CTRL].ctrl = BCM_PASSWD | integerPortion | (0x21 << 12);  // not sure what the 21 is
@@ -114,9 +111,9 @@ void Clock::initClock() {
   frequency = ((XOSC_FREQUENCY * ((uint64_t)pllCtl & 0x3ff) + (XOSC_FREQUENCY * (uint64_t)pllFrac) / (1 << 20)) /
                (2 * pllPer >> 1)) / ((pllCtl >> 12) & 0x7) * 2;
   fprintf(stderr, "PLL C frequency should now be %lu\n", frequency);
-  fprintf(stderr, "Multiplier should be %f\n", (double)scaledMultiplier/double(1<<20));
+  fprintf(stderr, "Multiplier should be %f\n", static_cast<double>(scaledMultiplier)/static_cast<double>(1<<20));
   pllcFrequency = frequency;
-  
+
   // now lets set the PCM clock control
   // kill the clock if busy
   if (clkReg[PCMCLK].ctrl & CLK_CTL_BUSY) {
@@ -147,7 +144,6 @@ void Clock::initClock() {
   } else {
     fprintf(stderr, "PLLD clock has failed to lock into its frequency of %lu Hz.\n", plldFrequency);
   }
-
 }
 
 Clock::Clock(uint32_t centerFrequency, GPIO * gpio, Peripheral * peripheralUtil) {  // may not need gpio object

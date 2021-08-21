@@ -17,9 +17,9 @@ $ make
 ## To Use
 In the build directory:
 ```
-$ sudo ./morse 28100000 10 "cq cq kg5yje"
+$ sudo ./morse 28100000 10 "CQ CQ CQ de KG5YJE KG5YJE K"
 ```
-This sends the message "cq cq kg5yje" at 10 words per minute on frequency 28.1 MHz
+This sends the message "CQ CQ CQ de KG5YJE KG5YJE K" at 10 words per minute on frequency 28.1 MHz
 
 
 ## Notes

@@ -68,7 +68,8 @@ void DMAChannel::dmaAllocBuffers(size_t subSymbolsSize, uint32_t clocksPerSubSym
   dmaCBs = dmaMalloc((PCM_FIFO_SIZE + 2 * subSymbolsSize * clocksPerSubSymbol + 1) * sizeof(DMAControlBlock));
   commandPinToClock = dmaMalloc(sizeof(uint32_t));
   // note, this only works for the first 10 BCM GPIO pins
-  *reinterpret_cast<uint32_t *>(commandPinToClock->virtualAddr) = (gpio->pinModeSettings & ~(7 << (gpio->pin * 3))) | (4 << (gpio->pin * 3));
+  *reinterpret_cast<uint32_t *>(commandPinToClock->virtualAddr) = (gpio->pinModeSettings & ~(7 << (gpio->pin * 3))) |
+    (4 << (gpio->pin * 3));
   commandPinToInput = dmaMalloc(sizeof(uint32_t));
   *reinterpret_cast<uint32_t *>(commandPinToInput->virtualAddr) = gpio->pinModeSettings & ~(7 << (gpio->pin * 3));
 }
@@ -117,12 +118,11 @@ void DMAChannel::dmaInitCBs(char * subSymbols, size_t subSymbolsSize, uint32_t c
   cb = ithCBVirtAddr(index);
   cb->txInfo = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
   cb->src = commandPinToInputBusAddr();
-  //cb->src = commandPinToClockBusAddr();  // this is temporary
   cb->dest = PERI_BUS_BASE + GPIO_BASE + GPIO_FSEL;
   cb->txLen = 4;
   cb->stride = 0;
   cb->nextCB = 0;  // no more DMA commands
-  
+
   // print out control blocks
   index = 0;
   cb = ithCBVirtAddr(index);
@@ -133,7 +133,7 @@ void DMAChannel::dmaInitCBs(char * subSymbols, size_t subSymbolsSize, uint32_t c
     fprintf(stderr, "%p DEST   %8.8x\n", &cb->dest, cb->dest);
     fprintf(stderr, "%p LEN    %8.8x\n", &cb->txLen, cb->txLen);
     fprintf(stderr, "%p NEXT   %8.8x\n", &cb->nextCB, cb->nextCB);
-    if (cb->nextCB == 0){
+    if (cb->nextCB == 0) {
       notDone = false;
     } else {
       index++;

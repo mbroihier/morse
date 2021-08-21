@@ -41,14 +41,13 @@ Mark Broihier
 // morse code translation table taken from morse.cpp in https://github.com/F5OEO/rpitx
 #define MORSECODES 37
 
-typedef struct morse_code
-{
+typedef struct morse_code {
   uint8_t ch;
   const char ditDah[8];
 } Morsecode;
 
 const Morsecode translationTable[]  = {
-                                       {' ', "    "}, 
+                                       {' ', "    "},
                                        {'0', "-----  "},
                                        {'1', ".----  "},
                                        {'2', "..---  "},
@@ -147,7 +146,7 @@ int main(int argc, char ** argv) {
   const char * message = 0;
 
   signal(SIGINT, sigint_handler);
-  
+
   if (argc != 4) {
     fprintf(stderr, "Usage: sudo ./morse <frequency> <transmission rate> <message - in quotes>\n");
     exit(-1);
@@ -155,21 +154,20 @@ int main(int argc, char ** argv) {
   frequency = atoi(argv[1]);
   symbolRate = atoi(argv[2]);
   message = argv[3];
-  
+
   Peripheral peripheralUtil;  //  create an object to reference peripherals
   GPIO gpio(4, &peripheralUtil);  // Use pin GPIO 4 (BCM)
   Clock clock(frequency, &gpio, &peripheralUtil);
   PCMHW pcm(&clock, &peripheralUtil);
-  //pcm.setPCMFrequency(symbolRate*125);
   uint32_t clocksPerSubSymbol = pcm.setPCMFrequency(symbolRate);
-  
+
   size_t messageLen = strlen(message) * 7 * 4;  // 7 dit dahs, 4 bytes per dit dah (maximum)
-  char * transmissionBuffer = (char *) malloc(messageLen);
+  char * transmissionBuffer = reinterpret_cast<char *>(malloc(messageLen));
   messageLen = messageToMorse(message, transmissionBuffer, messageLen);
   DMAChannel dma(transmissionBuffer, messageLen, clocksPerSubSymbol, 5, &gpio, &peripheralUtil);
   dma.dmaStart();
   int forceTermination = 0;
-  while (dma.dmaIsRunning() && ! exitLoop) {
+  while (dma.dmaIsRunning() && !exitLoop) {
     fprintf(stderr, "DMA Channel is still running, poll cycle %d\n", forceTermination);
     sleep(1.0);
     if (forceTermination++ > 120) break;

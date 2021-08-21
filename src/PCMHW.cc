@@ -47,9 +47,8 @@ uint32_t PCMHW::setPCMFrequency(uint32_t rate) {
   fprintf(stderr, "symbol rate times upsample = %d\n", frequency);
   do {
     prediv++;
-    pcmFrequencyCtl = clock->getPLLDFrequency() / (double)(frequency * prediv);
-    //fprintf(stderr, "pcmFrequencyCtl = %f\n", pcmFrequencyCtl);
-  } while (prediv < 1000 && ((pcmFrequencyCtl <= 2.0) || ( pcmFrequencyCtl >= 4096.0))); 
+    pcmFrequencyCtl = clock->getPLLDFrequency() / static_cast<double>(frequency * prediv);
+  } while (prediv < 1000 && ((pcmFrequencyCtl <= 2.0) || (pcmFrequencyCtl >= 4096.0)));
   fprintf(stderr, "pcmFrequencyCtl = %f\n", pcmFrequencyCtl);
 
   if (prediv > 1000 || pcmFrequencyCtl <= 2.0 || pcmFrequencyCtl >= 4096.0) {
@@ -60,7 +59,7 @@ uint32_t PCMHW::setPCMFrequency(uint32_t rate) {
   fprintf(stderr, "PCM prediv is: %d\n", prediv);
 
   uint32_t pcmDivider = (uint32_t) pcmFrequencyCtl;
-  uint32_t pcmDividerFraction = (uint32_t) (4096 * (pcmFrequencyCtl - (double)pcmDivider));
+  uint32_t pcmDividerFraction = (uint32_t) (4096 * (pcmFrequencyCtl - static_cast<double>(pcmDivider)));
   fprintf(stderr, "Setting PCM clock controls to %d and %d\n", pcmDivider, pcmDividerFraction);
   // kill the clock if busy
   if (clock->clkReg[PCMCLK].ctrl & CLK_CTL_BUSY) {
@@ -74,13 +73,13 @@ uint32_t PCMHW::setPCMFrequency(uint32_t rate) {
   // reenable the clock
   clock->clkReg[PCMCLK].ctrl = BCM_PASSWD | CLK_CTL_SRC(CLK_CTL_SRC_PLLD) | CLK_CTL_ENAB;
 
-  pcmReg->transmitter = 1 << 30; // 1 channel, 8 bits
+  pcmReg->transmitter = 1 << 30;  // 1 channel, 8 bits
   usleep(100);
   pcmReg->mode = prediv << 10;  // prediv clock by prediv
   usleep(100);
   pcmReg->ctrl |= 1 << 4 | 1 << 3;  // clear fifos
   usleep(100);
-  pcmReg->dmaReq = 0x40 << 24 | 0x40 << 8; // DMA Request when one slot is free
+  pcmReg->dmaReq = 0x40 << 24 | 0x40 << 8;  // DMA Request when one slot is free
   usleep(100);
   pcmReg->ctrl |= 1 << 9;  // enable DMA
   usleep(100);
