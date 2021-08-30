@@ -60,16 +60,16 @@ Mark Broihier 2021
 #define CM_PLLC (0x00000108 / 8)
 #define EMMCCLK (0x000001d0 / 8)
 
-#define PLLC_CTRL (0x00001120 / 8)
-#define PLLD_CTRL (0x00001140 / 8)
-#define PLLC_FRAC (0x00001220 / 8)
-#define PLLD_FRAC (0x00001240 / 8)
-#define PLLC_PER  (0x00001520 / 8)
-#define PLLD_PER  (0x00001540 / 8)
-#define PLLC_CORE (0x00001620 / 8)
-#define PLLD_CORE (0x00001640 / 8)
+#define PLLC_CTRL     (0x00001120 / 8)
+#define PLLD_CTRL     (0x00001140 / 8)
+#define PLLC_FRAC     (0x00001220 / 8)
+#define PLLD_FRAC     (0x00001240 / 8)
+#define PLLC_PER      (0x00001520 / 8)
+#define PLLD_PER      (0x00001540 / 8)
+#define PLLC_CORE     (0x00001620 / 8)
+#define PLLD_CORE     (0x00001640 / 8)
 
-#define CM_LOCK (0x00000114 /8)
+#define CM_LOCK (0x00000114 /8)  // to access this with CLKCtrlReg, use the div offset
 #define CM_LOCK_FLOCKC (1 << 10)
 #define CM_LOCK_FLOCKD (1 << 11)
 

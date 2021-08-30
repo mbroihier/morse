@@ -42,24 +42,40 @@ void Clock::initClock() {
   clkReg[CORECLK].ctrl = BCM_PASSWD | CLK_CTL_ENAB | CLK_CTL_SRC(CLK_CTL_SRC_PLLA);
 
   // Switch EMMC to PLLD
-
+  uint32_t clockControlCopy = clkReg[EMMCCLK].ctrl;
   // kill the clock if busy
   if (clkReg[EMMCCLK].ctrl & CLK_CTL_BUSY) {
     do {
-      clkReg[EMMCCLK].ctrl = BCM_PASSWD | CLK_CTL_KILL;
+      fprintf(stderr, "EMMCCLK is busy\n");
+      //clkReg[EMMCCLK].ctrl = BCM_PASSWD | CLK_CTL_KILL;
+      clkReg[EMMCCLK].ctrl = BCM_PASSWD || (clockControlCopy & (! CLK_CTL_ENAB));  // turn off enable for graceful stop
     } while (clkReg[EMMCCLK].ctrl & CLK_CTL_BUSY);
+    fprintf(stderr, "EMMCCLK has stopped\n");
   }
+  clockControlCopy = clkReg[EMMCCLK].ctrl;
 
   // Set clock source to plld
-  clkReg[EMMCCLK].ctrl = BCM_PASSWD | CLK_CTL_SRC(CLK_CTL_SRC_PLLD);
-  usleep(10);
+  clkReg[EMMCCLK].ctrl = BCM_PASSWD | (CLK_CTL_SRC(CLK_CTL_SRC_PLLD) | (clockControlCopy & ~0xf));
+  usleep(100);
 
   // Enable the EMMC clock
   clkReg[EMMCCLK].ctrl |= BCM_PASSWD | CLK_CTL_ENAB;
-  fprintf(stderr, "Clock initialization complete\n");
 
   // set GP0 Clock to PLLC
-  clkReg[GP0CLK].ctrl = BCM_PASSWD | CLK_CTL_SRC(CLK_CTL_SRC_PLLC) | CLK_CTL_ENAB;
+  clockControlCopy = clkReg[GP0CLK].ctrl;
+  if (clkReg[GP0CLK].ctrl & CLK_CTL_BUSY) {
+    fprintf(stderr, "GP0CLK is busy\n");
+    do {
+      // turn off enable and send kill - turning off enable doesn't seem to be enough
+      fprintf(stderr, "Sending GP0CLK control %8.8x\n", BCM_PASSWD | (clockControlCopy & (! CLK_CTL_ENAB)) | CLK_CTL_KILL);
+      clkReg[GP0CLK].ctrl = BCM_PASSWD | (clockControlCopy & (! CLK_CTL_ENAB)) | CLK_CTL_KILL ;
+    } while (clkReg[GP0CLK].ctrl & CLK_CTL_BUSY);
+    fprintf(stderr, "GP0CLK has stopped\n");
+  }
+  clockControlCopy = clkReg[GP0CLK].ctrl;
+  fprintf(stderr, "Current clock control copy: %8.8x\n", clockControlCopy);
+  // must turn off kill
+  //clkReg[GP0CLK].ctrl = (clockControlCopy & ~0x3f) | BCM_PASSWD | CLK_CTL_SRC(CLK_CTL_SRC_PLLC) | CLK_CTL_ENAB;
 
   clkReg[CM_PLLC].ctrl = BCM_PASSWD | 0x22A;  // enable PLLC_PER
   usleep(100);
@@ -95,15 +111,27 @@ void Clock::initClock() {
     exit(-1);
   }
   clkReg[GP0CLK].div = BCM_PASSWD | CLK_DIV_DIVI(divider);
-
-  // now lets program the frequency for PLLC
+  usleep(100);
   double multiplier = (static_cast<double>(centerFrequency) * divider) / static_cast<double>(XOSC_FREQUENCY);
   uint32_t scaledMultiplier = multiplier * static_cast<double>(1 << 20);
   uint32_t integerPortion = scaledMultiplier >> 20;
   uint32_t fractionalPortion = scaledMultiplier & 0xfffff;
-  clkReg[PLLC_CTRL].ctrl = BCM_PASSWD | integerPortion | (0x21 << 12);  // not sure what the 21 is
-  usleep(100);
   clkReg[PLLC_FRAC].ctrl = BCM_PASSWD | fractionalPortion;
+  usleep(100);
+  fprintf(stderr, "Sending PLLC control command of %8.8x\n", BCM_PASSWD | integerPortion | (0x21 << 12));
+  clkReg[PLLC_CTRL].ctrl = BCM_PASSWD | integerPortion | (0x21 << 12);  // PDIV of 1, PRSTN (start?)
+  usleep(100);
+  // must turn off kill while enabling GP0 clock
+  clkReg[GP0CLK].ctrl = (clockControlCopy & ~0x3f) | BCM_PASSWD | CLK_CTL_SRC(CLK_CTL_SRC_PLLC) | CLK_CTL_ENAB;
+  usleep(100);
+  // check for frequency lock of PLLC
+  fprintf(stderr, "CM_LOCK address %p\n", &clkReg[CM_LOCK].div);
+  fprintf(stderr, "CM_LOCK value: %8.8x\n", clkReg[CM_LOCK].div);
+  if (clkReg[CM_LOCK].div & CM_LOCK_FLOCKC > 0) {
+    fprintf(stderr, "PLLC clock has locked into its frequency of %lu Hz.\n", pllcFrequency);
+  } else {
+    fprintf(stderr, "PLLC clock has failed to lock into its frequency of %lu Hz.\n", pllcFrequency);
+  }
 
   pllCtl = clkReg[PLLC_CTRL].ctrl;
   pllFrac = clkReg[PLLC_FRAC].ctrl;
@@ -134,12 +162,7 @@ void Clock::initClock() {
   plldFrequency = frequency;
   sleep(1.0);
   // check for frequency lock
-  if (clkReg[CM_LOCK].ctrl & CM_LOCK_FLOCKC > 0) {
-    fprintf(stderr, "PLLC clock has locked into its frequency of %lu Hz.\n", pllcFrequency);
-  } else {
-    fprintf(stderr, "PLLC clock has failed to lock into its frequency of %lu Hz.\n", pllcFrequency);
-  }
-  if (clkReg[CM_LOCK].ctrl & CM_LOCK_FLOCKD > 0) {
+  if (clkReg[CM_LOCK].div & CM_LOCK_FLOCKD > 0) {
     fprintf(stderr, "PLLD clock has locked into its frequency of %lu Hz.\n", plldFrequency);
   } else {
     fprintf(stderr, "PLLD clock has failed to lock into its frequency of %lu Hz.\n", plldFrequency);
@@ -152,17 +175,19 @@ Clock::Clock(uint32_t centerFrequency, GPIO * gpio, Peripheral * peripheralUtil)
   this->gpio = gpio;  // may not need this
   this->centerFrequency = centerFrequency;
   initClock();
+  fprintf(stderr,
+          "Clock initialization complete, all clocks (GP0, PLLC, PLLD, PCM) should be configured and running\n");
 }
 
 Clock::~Clock() {
   // before shutdown - look at lock
   fprintf(stderr, "Clock shutting down\n");
-  if (clkReg[CM_LOCK].ctrl & CM_LOCK_FLOCKC > 0) {
+  if (clkReg[CM_LOCK].div & CM_LOCK_FLOCKC > 0) {
     fprintf(stderr, "PLLC clock has locked into its frequency of %lu Hz.\n", pllcFrequency);
   } else {
     fprintf(stderr, "PLLC clock has failed to lock into its frequency of %lu Hz.\n", pllcFrequency);
   }
-  if (clkReg[CM_LOCK].ctrl & CM_LOCK_FLOCKD > 0) {
+  if (clkReg[CM_LOCK].div & CM_LOCK_FLOCKD > 0) {
     fprintf(stderr, "PLLD clock has locked into its frequency of %lu Hz.\n", plldFrequency);
   } else {
     fprintf(stderr, "PLLD clock has failed to lock into its frequency of %lu Hz.\n", plldFrequency);
