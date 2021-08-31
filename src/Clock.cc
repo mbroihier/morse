@@ -47,8 +47,8 @@ void Clock::initClock() {
   if (clkReg[EMMCCLK].ctrl & CLK_CTL_BUSY) {
     do {
       fprintf(stderr, "EMMCCLK is busy\n");
-      //clkReg[EMMCCLK].ctrl = BCM_PASSWD | CLK_CTL_KILL;
-      clkReg[EMMCCLK].ctrl = BCM_PASSWD || (clockControlCopy & (! CLK_CTL_ENAB));  // turn off enable for graceful stop
+      // turn off enable for graceful stop
+      clkReg[EMMCCLK].ctrl = BCM_PASSWD || (clockControlCopy & (!CLK_CTL_ENAB));
     } while (clkReg[EMMCCLK].ctrl & CLK_CTL_BUSY);
     fprintf(stderr, "EMMCCLK has stopped\n");
   }
@@ -67,15 +67,15 @@ void Clock::initClock() {
     fprintf(stderr, "GP0CLK is busy\n");
     do {
       // turn off enable and send kill - turning off enable doesn't seem to be enough
-      fprintf(stderr, "Sending GP0CLK control %8.8x\n", BCM_PASSWD | (clockControlCopy & (! CLK_CTL_ENAB)) | CLK_CTL_KILL);
-      clkReg[GP0CLK].ctrl = BCM_PASSWD | (clockControlCopy & (! CLK_CTL_ENAB)) | CLK_CTL_KILL ;
+      fprintf(stderr, "Sending GP0CLK control %8.8x\n",
+              BCM_PASSWD | (clockControlCopy & (!CLK_CTL_ENAB)) | CLK_CTL_KILL);
+      clkReg[GP0CLK].ctrl = BCM_PASSWD | (clockControlCopy & (!CLK_CTL_ENAB)) | CLK_CTL_KILL;
     } while (clkReg[GP0CLK].ctrl & CLK_CTL_BUSY);
     fprintf(stderr, "GP0CLK has stopped\n");
   }
   clockControlCopy = clkReg[GP0CLK].ctrl;
   fprintf(stderr, "Current clock control copy: %8.8x\n", clockControlCopy);
   // must turn off kill
-  //clkReg[GP0CLK].ctrl = (clockControlCopy & ~0x3f) | BCM_PASSWD | CLK_CTL_SRC(CLK_CTL_SRC_PLLC) | CLK_CTL_ENAB;
 
   clkReg[CM_PLLC].ctrl = BCM_PASSWD | 0x22A;  // enable PLLC_PER
   usleep(100);
