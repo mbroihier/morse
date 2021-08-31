@@ -41,7 +41,7 @@ void PCMHW::initPCM() {
 // for 10 words per second rate (500 symbols per min), that is 120 clocks per symbol
 // therefore, for 5 words per second rate (250 symbols per min), that is 240 clocks per symbol
 uint32_t PCMHW::setPCMFrequency(uint32_t rate) {
-  uint32_t prediv = 0;
+  uint32_t prediv = 9;  // don't know why 10 should be minimum prediv
   uint32_t frequency = 1000;  // use a 1 KHz (1 msec) timer to clock subsymbols
   double pcmFrequencyCtl = 0.0;
   fprintf(stderr, "symbol rate times upsample = %d\n", frequency);
@@ -75,7 +75,7 @@ uint32_t PCMHW::setPCMFrequency(uint32_t rate) {
 
   pcmReg->transmitter = 1 << 30;  // 1 channel, 8 bits
   usleep(100);
-  pcmReg->mode = prediv << 10;  // prediv clock by prediv
+  pcmReg->mode = (prediv - 1) << 10;  // prediv clock by prediv - 1 as per HW documentation
   usleep(100);
   pcmReg->ctrl |= 1 << 4 | 1 << 3;  // clear fifos
   usleep(100);
