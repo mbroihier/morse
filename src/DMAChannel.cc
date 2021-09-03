@@ -88,8 +88,6 @@ void DMAChannel::dmaInitCBs(char * subSymbols, size_t subSymbolsSize, uint32_t c
   int subSymbolIndex = 0;
   int clocks = 0;
   while (subSymbolIndex < subSymbolsSize) {
-    fprintf(stderr, "control block index: %d subSymbolIndex: %d clocks %d\n",
-            index, subSymbolIndex, clocks);
     // signal control block - clock or no clock
     cb = ithCBVirtAddr(index);
     cb->txInfo = DMA_NO_WIDE_BURSTS | DMA_WAIT_RESP;
@@ -124,6 +122,7 @@ void DMAChannel::dmaInitCBs(char * subSymbols, size_t subSymbolsSize, uint32_t c
   cb->nextCB = 0;  // no more DMA commands
 
   // print out control blocks
+  /* but only if debugging
   index = 0;
   cb = ithCBVirtAddr(index);
   bool notDone = true;
@@ -140,6 +139,7 @@ void DMAChannel::dmaInitCBs(char * subSymbols, size_t subSymbolsSize, uint32_t c
       cb = ithCBVirtAddr(index);
     }
   } while (notDone);
+  */
 }
 
 

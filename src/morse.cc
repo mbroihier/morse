@@ -123,11 +123,11 @@ size_t messageToMorse(const char * message, char * encodedMessage, size_t maxEnc
       exit(-1);
     }
   }
-  fprintf(stderr, "Encoded message:\n");
+  fprintf(stdout, "Encoded message:\n");
   for (uint32_t index = 0; index < encodedMessageIndex; index++) {
-    fprintf(stderr, "%1.1d", encodedMessage[index]);
+    fprintf(stdout, "%1.1d", encodedMessage[index]);
   }
-  fprintf(stderr, "\n");
+  fprintf(stdout, "\n");
   return(encodedMessageIndex);
 }
 
@@ -135,7 +135,7 @@ bool exitLoop = false;
 
 void sigint_handler(int signo) {
   if (signo == SIGINT) {
-    fprintf(stderr, "\nUser termination request\n");
+    fprintf(stdout, "\nUser termination request\n");
     exitLoop = true;
   }
 }
@@ -148,7 +148,7 @@ int main(int argc, char ** argv) {
   signal(SIGINT, sigint_handler);
 
   if (argc != 4) {
-    fprintf(stderr, "Usage: sudo ./morse <frequency> <transmission rate> <message - in quotes>\n");
+    fprintf(stdout, "Usage: sudo ./morse <frequency> <transmission rate> <message - in quotes>\n");
     exit(-1);
   }
   frequency = atoi(argv[1]);
@@ -166,9 +166,10 @@ int main(int argc, char ** argv) {
   messageLen = messageToMorse(message, transmissionBuffer, messageLen);
   DMAChannel dma(transmissionBuffer, messageLen, clocksPerSubSymbol, 5, &gpio, &peripheralUtil);
   dma.dmaStart();
+  fprintf(stdout, "Message transmission started.\n");
   int forceTermination = 0;
   while (dma.dmaIsRunning() && !exitLoop) {
-    fprintf(stderr, "DMA Channel is still running, poll cycle %d\n", forceTermination);
+    fprintf(stdout, "DMA Channel is still running/message still being sent, poll cycle %d\n", forceTermination);
     sleep(1.0);
     if (forceTermination++ > 120) break;
   }

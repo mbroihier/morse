@@ -183,13 +183,13 @@ Clock::~Clock() {
   // before shutdown - look at lock
   fprintf(stderr, "Clock shutting down\n");
   if (clkReg[CM_LOCK].div & CM_LOCK_FLOCKC > 0) {
-    fprintf(stderr, "PLLC clock has locked into its frequency of %lu Hz.\n", pllcFrequency);
+    fprintf(stderr, "PLLC clock is locked into its frequency of %lu Hz.\n", pllcFrequency);
   } else {
-    fprintf(stderr, "PLLC clock has failed to lock into its frequency of %lu Hz.\n", pllcFrequency);
+    fprintf(stderr, "PLLC clock is not locked into its frequency of %lu Hz.\n", pllcFrequency);
   }
   if (clkReg[CM_LOCK].div & CM_LOCK_FLOCKD > 0) {
-    fprintf(stderr, "PLLD clock has locked into its frequency of %lu Hz.\n", plldFrequency);
+    fprintf(stderr, "PLLD clock is locked into its frequency of %lu Hz.\n", plldFrequency);
   } else {
-    fprintf(stderr, "PLLD clock has failed to lock into its frequency of %lu Hz.\n", plldFrequency);
+    fprintf(stderr, "PLLD clock is not locked into its frequency of %lu Hz.\n", plldFrequency);
   }
 }
