@@ -32,13 +32,13 @@ Mark Broihier 2021
 #include "../include/GPIO.h"
 
 GPIO::GPIO(uint32_t pin, Peripheral * peripheralUtil) {
-  volatile uint32_t * gpioModeReg =
-    reinterpret_cast<uint32_t *>(peripheralUtil->mapPeripheralToUserSpace(GPIO_BASE, GPIO_MODE_SIZE));
+  gpioModeReg = reinterpret_cast<uint32_t *>(peripheralUtil->mapPeripheralToUserSpace(GPIO_BASE, GPIO_MODE_SIZE));
   this->pin = pin;
   pinModeSettings = gpioModeReg[pin / 10];  // store the current pin mode settings
   fprintf(stderr, "pin mode settings at offset %d: %8.8x\n", pin / 10, pinModeSettings);
 }
 
 GPIO::~GPIO() {
+  gpioModeReg[pin / 10] = pinModeSettings;  // set modes back to initial settings 
   fprintf(stderr, "GPIO shutting down\n");
 }

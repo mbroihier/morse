@@ -168,10 +168,11 @@ int main(int argc, char ** argv) {
   dma.dmaStart();
   fprintf(stdout, "Message transmission started.\n");
   int forceTermination = 0;
+  int const MAXIMUM_TRANSMISSION_TIME = 600;  // 10 minutes
   while (dma.dmaIsRunning() && !exitLoop) {
     fprintf(stdout, "DMA Channel is still running/message still being sent, poll cycle %d\n", forceTermination);
     sleep(1.0);
-    if (forceTermination++ > 120) break;
+    if (forceTermination++ > MAXIMUM_TRANSMISSION_TIME) break;
   }
   free(transmissionBuffer);
   return 0;

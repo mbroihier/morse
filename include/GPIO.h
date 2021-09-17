@@ -45,6 +45,7 @@ Mark Broihier 2021
 
 class GPIO {
  private:
+  volatile uint32_t * gpioModeReg;
  public:
   uint32_t pin;
   uint32_t pinModeSettings;
